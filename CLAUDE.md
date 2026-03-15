@@ -54,3 +54,9 @@ Dark mode CSS variables exist in both `@media (prefers-color-scheme: dark)` (sys
 ### API
 
 This project is based on the API project configured at "../prof-c-sharp-mvc" where the controller names and data models match the store and page names
+
+### Best Practices
+
+Ensure zustand best practices are followed to minimize rerender
+Ensure react best practices are followed to minimize rerender
+Adhere to DRY principles

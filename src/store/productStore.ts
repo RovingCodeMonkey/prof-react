@@ -1,26 +1,19 @@
 import { create } from 'zustand'
 import { api } from './api'
 import type { Product, PagedResult } from './types'
+import {
+  paginationInitialState,
+  createPaginationActions,
+  type IPaginationState,
+  type IPaginationActions,
+} from './pagination'
 
-interface IProductStore {
+interface IProductStore extends IPaginationState, IPaginationActions {
   items: Product[]
   selected: Product | null
   loading: boolean
   error: string | null
-  // pagination & query state
-  page: number
-  pageSize: number
-  totalCount: number
-  cursor: number | null
-  search: string
-  sortBy: string
-  ascending: boolean
-  // actions
   fetchAll: () => Promise<void>
-  setSearch: (value: string) => void
-  setSort: (column: string) => void
-  nextPage: () => void
-  prevPage: () => void
   fetchOne: (id: number) => Promise<Product | null>
   create: (data: Omit<Product, 'productId'>) => Promise<void>
   update: (data: Product) => Promise<void>
@@ -32,13 +25,8 @@ export const useProductStore = create<IProductStore>((set, get) => ({
   selected: null,
   loading: false,
   error: null,
-  page: 0,
-  pageSize: 3,
-  totalCount: 0,
-  cursor: null,
-  search: '',
-  sortBy: '',
-  ascending: true,
+  ...paginationInitialState,
+  ...createPaginationActions(set, get),
 
   fetchAll: async () => {
     const { page, pageSize, search, sortBy, ascending } = get()
@@ -61,52 +49,18 @@ export const useProductStore = create<IProductStore>((set, get) => ({
     }
   },
 
-  setSearch: (value) => {
-    set({ search: value, page: 0 })
-    get().fetchAll()
-  },
-
-  setSort: (column) => {
-    const { sortBy, ascending } = get()
-    if (sortBy === column) {
-      set({ ascending: !ascending, page: 0 })
-    } else {
-      set({ sortBy: column, ascending: true, page: 0 })
-    }
-    get().fetchAll()
-  },
-
-  nextPage: () => {
-    const { cursor } = get()
-    if (cursor === null) return
-    set({ page: cursor })
-    get().fetchAll()
-  },
-
-  prevPage: () => {
-    const { page } = get()
-    if (page === 0) return
-    set({ page: page - 1 })
-    get().fetchAll()
-  },
-
   fetchOne: async (id) => {
-    const cached = get().items.find((p) => p.productId === id)
-    if (cached) {
-      set({ selected: cached })
-      return cached;
-    }
     set({ loading: true, error: null })
     try {
       const selected = await api.get<Product>(`/products/${id}`)
       set({ selected })
-      return selected;
+      return selected
     } catch (e) {
       set({ error: (e as Error).message })
+      return null
     } finally {
       set({ loading: false })
     }
-    return null;
   },
 
   create: async (data) => {

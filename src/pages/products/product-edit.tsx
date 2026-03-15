@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useShallow } from 'zustand/react/shallow'
 import { useProductStore } from '@/store/productStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +15,12 @@ export function ProductEditPage() {
 
   const mode = productId === undefined ? PageMode.Add : PageMode.Edit
 
-  const { loading, error, fetchOne, create, update } = useProductStore()
+  const { loading, error } = useProductStore(
+    useShallow((s) => ({ loading: s.loading, error: s.error }))
+  )
+  const fetchOne = useProductStore((s) => s.fetchOne)
+  const create = useProductStore((s) => s.create)
+  const update = useProductStore((s) => s.update)
 
   const [form, setForm] = useState<Omit<Product, 'productId'>>({
     name: '',
@@ -27,15 +33,21 @@ export function ProductEditPage() {
   })
 
   useEffect(() => {
-    async function loadProduct() {
-      if (mode === PageMode.Edit) {
-        const product = await fetchOne(productId!)
+    if (mode === PageMode.Edit) {
+      fetchOne(productId!).then((product) => {
         if (product) {
-          setForm(product)
+          setForm({
+            name: product.name,
+            manufacturer: product.manufacturer,
+            style: product.style,
+            purchasePrice: product.purchasePrice,
+            salePrice: product.salePrice,
+            qtyOnHand: product.qtyOnHand,
+            commisionPercentage: product.commisionPercentage,
+          })
         }
-      }
+      })
     }
-    loadProduct();
   }, [fetchOne, mode, productId])  
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -45,7 +57,15 @@ export function ProductEditPage() {
     }))
   }
 
+  const validationErrors: string[] = []
+  if (!form.name.trim()) validationErrors.push('Name is required')
+  if (!form.manufacturer.trim()) validationErrors.push('Manufacturer is required')
+  if (!form.style.trim()) validationErrors.push('Style is required')
+  if (!form.purchasePrice) validationErrors.push('Purchase Price is required')
+  if (!form.salePrice) validationErrors.push('Sale Price is required')
+
   const handleSave = async () => {
+    if (validationErrors.length > 0) return
     if (mode === PageMode.Add) {
       await create(form)
     } else {
@@ -61,6 +81,11 @@ export function ProductEditPage() {
       </h1>
 
       {error && <p className="text-destructive mb-4">Error: {error}</p>}
+      {validationErrors.length > 0 && (
+        <ul className="mb-4 text-sm text-destructive list-disc list-inside">
+          {validationErrors.map((e) => <li key={e}>{e}</li>)}
+        </ul>
+      )}
 
       <div className="grid gap-4">
         <div className="grid gap-1.5">
@@ -135,7 +160,7 @@ export function ProductEditPage() {
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} disabled={loading}>
+        <Button onClick={handleSave} disabled={loading || validationErrors.length > 0}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/products')} disabled={loading}>

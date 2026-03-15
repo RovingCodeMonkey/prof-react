@@ -35,6 +35,9 @@ export interface Sale {
   salesPersonId: number
   customerId: number
   salesDate: string
+  salePrice: number
+  appliedDiscount: number
+  finalPrice: number
   product?: Product
   salesPerson?: SalesPerson
   customer?: Customer
@@ -50,7 +53,7 @@ export interface Discount {
   discountId: number
   productId: number
   beginDate: string
-  endDate: string
+  endDate: string | null
   discountPercentage: number
   product?: Product
 }

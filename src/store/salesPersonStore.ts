@@ -1,14 +1,22 @@
 import { create } from 'zustand'
 import { api } from './api'
-import type { SalesPerson } from './types'
+import type { SalesPerson, PagedResult } from './types'
+import {
+  paginationInitialState,
+  createPaginationActions,
+  type IPaginationState,
+  type IPaginationActions,
+} from './pagination'
 
-interface ISalesPersonStore {
+interface ISalesPersonStore extends IPaginationState, IPaginationActions {
   items: SalesPerson[]
   selected: SalesPerson | null
   loading: boolean
   error: string | null
+  phone: string
   fetchAll: () => Promise<void>
-  fetchOne: (id: number) => Promise<void>
+  setPhone: (value: string) => void
+  fetchOne: (id: number) => Promise<SalesPerson | null>
   create: (data: Omit<SalesPerson, 'salesPersonId'>) => Promise<void>
   update: (data: SalesPerson) => Promise<void>
   remove: (id: number) => Promise<void>
@@ -19,12 +27,25 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
   selected: null,
   loading: false,
   error: null,
+  phone: '',
+  ...paginationInitialState,
+  ...createPaginationActions(set, get),
 
   fetchAll: async () => {
+    const { page, pageSize, search, phone, sortBy, ascending } = get()
+    const params = new URLSearchParams({
+      page: String(page),
+      count: String(pageSize),
+      ascending: String(ascending),
+    })
+    if (search) params.set('search', search)
+    if (phone) params.set('phone', phone)
+    if (sortBy) params.set('sortBy', sortBy)
+
     set({ loading: true, error: null })
     try {
-      const items = await api.get<SalesPerson[]>('/salespersons')
-      set({ items })
+      const result = await api.get<PagedResult<SalesPerson>>(`/salespersons?${params}`)
+      set({ items: result.items, totalCount: result.count, cursor: result.cursor })
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {
@@ -32,18 +53,25 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
     }
   },
 
+  setPhone: (value) => {
+    set({ phone: value, page: 0 })
+    get().fetchAll()
+  },
+
   fetchOne: async (id) => {
     const cached = get().items.find((sp) => sp.salesPersonId === id)
     if (cached) {
       set({ selected: cached })
-      return
+      return cached
     }
     set({ loading: true, error: null })
     try {
       const selected = await api.get<SalesPerson>(`/salespersons/${id}`)
       set({ selected })
+      return selected
     } catch (e) {
       set({ error: (e as Error).message })
+      return null
     } finally {
       set({ loading: false })
     }

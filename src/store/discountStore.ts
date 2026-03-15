@@ -1,30 +1,47 @@
 import { create } from 'zustand'
 import { api } from './api'
-import type { Discount } from './types'
+import type { Discount, PagedResult } from './types'
+import {
+  paginationInitialState,
+  createPaginationActions,
+  type IPaginationState,
+  type IPaginationActions,
+} from './pagination'
 
-interface IDiscountStore {
+interface IDiscountStore extends IPaginationState, IPaginationActions {
   items: Discount[]
   selected: Discount | null
   loading: boolean
   error: string | null
   fetchAll: () => Promise<void>
-  fetchOne: (id: number) => Promise<void>
+  fetchOne: (id: number) => Promise<Discount | null>
   create: (data: Omit<Discount, 'discountId' | 'product'>) => Promise<void>
   update: (data: Discount) => Promise<void>
   remove: (id: number) => Promise<void>
 }
 
-export const useDscountStore = create<IDiscountStore>((set, get) => ({
+export const useDiscountStore = create<IDiscountStore>((set, get) => ({
   items: [],
   selected: null,
   loading: false,
   error: null,
+  ...paginationInitialState,
+  ...createPaginationActions(set, get),
 
   fetchAll: async () => {
+    const { page, pageSize, search, sortBy, ascending } = get()
+    const params = new URLSearchParams({
+      page: String(page),
+      count: String(pageSize),
+      ascending: String(ascending),
+    })
+    if (search) params.set('search', search)
+    if (sortBy) params.set('sortBy', sortBy)
+
     set({ loading: true, error: null })
     try {
-      const items = await api.get<Discount[]>('/discounts')
-      set({ items })
+      const result = await api.get<PagedResult<Discount>>(`/discounts?${params}`)
+      set({ items: result.items, totalCount: result.count, cursor: result.cursor })
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {
@@ -36,14 +53,16 @@ export const useDscountStore = create<IDiscountStore>((set, get) => ({
     const cached = get().items.find((d) => d.discountId === id)
     if (cached) {
       set({ selected: cached })
-      return
+      return cached
     }
     set({ loading: true, error: null })
     try {
       const selected = await api.get<Discount>(`/discounts/${id}`)
       set({ selected })
+      return selected
     } catch (e) {
       set({ error: (e as Error).message })
+      return null
     } finally {
       set({ loading: false })
     }

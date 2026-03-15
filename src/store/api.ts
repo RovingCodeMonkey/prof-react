@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.API_BASE_URL as string
+const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -22,7 +22,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, signal?: AbortSignal) => request<T>(path, { signal }),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: (path: string, body: unknown) =>
