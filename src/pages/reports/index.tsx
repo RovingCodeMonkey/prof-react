@@ -93,7 +93,7 @@ export function ReportsPage() {
   ], [totalSales, totalCommission])
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Reports</h1>
 
       <div className="mb-2 flex items-center gap-4 px-5">

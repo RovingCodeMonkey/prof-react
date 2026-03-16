@@ -40,7 +40,7 @@ export function CustomerEditPage() {
           setForm({
             firstName: customer.firstName,
             lastName: customer.lastName,
-            address: customer.address,
+            address: customer.address ?? '',
             phone: customer.phone,
             startDate: format(parseISO(customer.startDate), 'yyyy-MM-dd'),
           })
@@ -62,16 +62,20 @@ export function CustomerEditPage() {
   const handleSave = async () => {
     setSubmitted(true)
     if (validationErrors.length > 0) return
-    if (mode === PageMode.Add) {
-      await create(form)
-    } else {
-      await update({ customerId: customerId!, ...form })
+    try {
+      if (mode === PageMode.Add) {
+        await create(form)
+      } else {
+        await update({ customerId: customerId!, ...form })
+      }
+      navigate('/customers')
+    } catch {
+      // error is set in the store and displayed above
     }
-    navigate('/customers')
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-lg">
+    <div className="container mx-auto max-w-lg">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">
         {mode === PageMode.Add ? 'New Customer' : 'Edit Customer'}
       </h1>
@@ -106,7 +110,7 @@ export function CustomerEditPage() {
           <label className="text-sm font-medium text-foreground" htmlFor="address">Address</label>
           <Input
             id="address"
-            value={form.address}
+            value={form.address ?? undefined}
             onChange={(e) => handleChange('address', e.target.value)}
           />
         </div>

@@ -90,7 +90,7 @@ export function DiscountsPage() {
   ], [sortBy, ascending, setSort, remove])
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Discounts</h1>
 
       <div className="mb-4 flex items-center justify-between gap-4 px-5">

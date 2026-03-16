@@ -42,11 +42,11 @@ export function SalespersonEditPage() {
           setForm({
             firstName: sp.firstName,
             lastName: sp.lastName,
-            address: sp.address,
+            address: sp.address ?? '',
             phone: sp.phone,
             startDate: format(parseISO(sp.startDate), 'yyyy-MM-dd'),
             terminationDate: sp.terminationDate ? format(parseISO(sp.terminationDate), 'yyyy-MM-dd') : '',
-            manager: sp.manager,
+            manager: sp.manager ?? '',
           })
         }
       })
@@ -80,7 +80,7 @@ export function SalespersonEditPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-lg">
+    <div className="container mx-auto max-w-lg">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">
         {mode === PageMode.Add ? 'New Salesperson' : 'Edit Salesperson'}
       </h1>
@@ -105,7 +105,7 @@ export function SalespersonEditPage() {
 
         <div className="grid gap-1.5">
           <label className="text-sm font-medium text-foreground" htmlFor="address">Address</label>
-          <Input id="address" value={form.address} onChange={(e) => handleChange('address', e.target.value)} />
+          <Input id="address" value={form.address ?? undefined} onChange={(e) => handleChange('address', e.target.value)} />
         </div>
 
         <div className="grid gap-1.5">
@@ -125,7 +125,7 @@ export function SalespersonEditPage() {
 
         <div className="grid gap-1.5">
           <label className="text-sm font-medium text-foreground" htmlFor="manager">Manager</label>
-          <Input id="manager" value={form.manager} onChange={(e) => handleChange('manager', e.target.value)} />
+          <Input id="manager" value={form.manager ?? undefined} onChange={(e) => handleChange('manager', e.target.value)} />
         </div>
       </div>
 

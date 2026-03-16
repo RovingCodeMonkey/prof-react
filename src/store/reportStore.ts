@@ -58,7 +58,7 @@ export const useReportStore = create<IReportStore>((set, get) => ({
       const result = await api.get<ReportResult>(`/reports?${params}`)
       set({ items: result.items, count: result.count, totalSales: result.totalSales, totalCommission: result.totalCommission })
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
     } finally {
       set({ loading: false })
     }

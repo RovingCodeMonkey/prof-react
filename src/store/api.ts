@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+if (!BASE_URL) throw new Error('VITE_API_BASE_URL is not defined')
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -10,8 +11,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(body || `${res.status} ${res.statusText}`)
+    if (res.status === 409) {
+      const body = await res.text().catch(() => '')
+      throw new Error(body || 'Conflict')
+    }
+    throw new Error(`An unexpected error occurred (${res.status})`)
   }
 
   // 204 No Content (DELETE / PUT) — return empty

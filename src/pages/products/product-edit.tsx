@@ -82,7 +82,7 @@ export function ProductEditPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-lg">
+    <div className="container mx-auto max-w-lg">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">
         {mode === PageMode.Add ? 'New Product' : 'Edit Product'}
       </h1>

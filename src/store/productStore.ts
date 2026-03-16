@@ -46,7 +46,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       const result = await api.get<PagedResult<Product>>(`/products?${params}`)
       set({ items: result.items, totalCount: result.count, cursor: result.cursor })
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
     } finally {
       set({ loading: false })
     }
@@ -59,7 +59,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       set({ selected })
       return selected
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
       return null
     } finally {
       set({ loading: false })
@@ -72,7 +72,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       const created = await api.post<Product>('/products', data)
       set((s) => ({ items: [...s.items, created] }))
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
       throw e
     } finally {
       set({ loading: false })
@@ -88,7 +88,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
         selected: s.selected?.productId === data.productId ? data : s.selected,
       }))
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
       throw e
     } finally {
       set({ loading: false })
@@ -102,7 +102,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       set((s) => ({ selected: s.selected?.productId === id ? null : s.selected }))
       await get().fetchAll()
     } catch (e) {
-      set({ error: (e as Error).message })
+      set({ error: e instanceof Error ? e.message : String(e) })
     } finally {
       set({ loading: false })
     }

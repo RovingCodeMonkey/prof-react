@@ -2,7 +2,7 @@ export interface Customer {
   customerId: number
   firstName: string
   lastName: string
-  address: string
+  address: string | null
   phone: string
   startDate: string
 }
@@ -22,11 +22,11 @@ export interface SalesPerson {
   salesPersonId: number
   firstName: string
   lastName: string
-  address: string
+  address: string | null
   phone: string
   startDate: string
   terminationDate: string | null
-  manager: string
+  manager: string | null
 }
 
 export interface Sale {
@@ -62,7 +62,7 @@ export interface Discount {
   discountId: number
   productId: number
   beginDate: string
-  endDate: string | null
+  endDate: string
   discountPercentage: number
   product?: Product
 }

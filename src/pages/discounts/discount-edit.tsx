@@ -30,7 +30,7 @@ export function DiscountEditPage() {
   const [form, setForm] = useState<Omit<Discount, 'discountId' | 'product'>>({
     productId: 0,
     beginDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: null,
+    endDate: '',
     discountPercentage: 0,
   })
   const [selectedProductName, setSelectedProductName] = useState('')
@@ -42,7 +42,7 @@ export function DiscountEditPage() {
           setForm({
             productId: discount.productId,
             beginDate: format(parseISO(discount.beginDate), 'yyyy-MM-dd'),
-            endDate: discount.endDate ? format(parseISO(discount.endDate), 'yyyy-MM-dd') : null,
+            endDate: discount.endDate ? format(parseISO(discount.endDate), 'yyyy-MM-dd') : '',
             discountPercentage: discount.discountPercentage,
           })
           setSelectedProductName(discount.product?.name ?? '')
@@ -67,16 +67,20 @@ export function DiscountEditPage() {
   const handleSave = async () => {
     setSubmitted(true)
     if (validationErrors.length > 0) return
-    if (mode === PageMode.Add) {
-      await create(form)
-    } else {
-      await update({ discountId: discountId!, ...form })
+    try {
+      if (mode === PageMode.Add) {
+        await create(form)
+      } else {
+        await update({ discountId: discountId!, ...form })
+      }
+      navigate('/discounts')
+    } catch {
+      // error is set in the store and displayed above
     }
-    navigate('/discounts')
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-lg">
+    <div className="container mx-auto max-w-lg">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">
         {mode === PageMode.Add ? 'New Discount' : 'Edit Discount'}
       </h1>
@@ -126,9 +130,9 @@ export function DiscountEditPage() {
           <Input
             id="endDate"
             type="date"
-            value={form.endDate ?? ''}
+            value={form.endDate}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, endDate: e.target.value || null }))
+              setForm((prev) => ({ ...prev, endDate: e.target.value }))
             }
           />
         </div>
