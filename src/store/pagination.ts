@@ -17,7 +17,7 @@ export interface IPaginationActions {
 
 export const paginationInitialState: IPaginationState = {
   page: 0,
-  pageSize: 3,
+  pageSize: 20,
   totalCount: 0,
   cursor: null,
   search: '',

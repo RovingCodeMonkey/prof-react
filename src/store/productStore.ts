@@ -18,6 +18,7 @@ interface IProductStore extends IPaginationState, IPaginationActions {
   create: (data: Omit<Product, 'productId'>) => Promise<void>
   update: (data: Product) => Promise<void>
   remove: (id: number) => Promise<void>
+  clearFilters: () => void
 }
 
 export const useProductStore = create<IProductStore>((set, get) => ({
@@ -27,6 +28,8 @@ export const useProductStore = create<IProductStore>((set, get) => ({
   error: null,
   ...paginationInitialState,
   ...createPaginationActions(set, get),
+
+  clearFilters: () => { set({ search: '', page: 0 }); get().fetchAll() },
 
   fetchAll: async () => {
     const { page, pageSize, search, sortBy, ascending } = get()
@@ -70,6 +73,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       set((s) => ({ items: [...s.items, created] }))
     } catch (e) {
       set({ error: (e as Error).message })
+      throw e
     } finally {
       set({ loading: false })
     }
@@ -85,6 +89,7 @@ export const useProductStore = create<IProductStore>((set, get) => ({
       }))
     } catch (e) {
       set({ error: (e as Error).message })
+      throw e
     } finally {
       set({ loading: false })
     }
@@ -94,10 +99,8 @@ export const useProductStore = create<IProductStore>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.delete(`/products/${id}`)
-      set((s) => ({
-        items: s.items.filter((p) => p.productId !== id),
-        selected: s.selected?.productId === id ? null : s.selected,
-      }))
+      set((s) => ({ selected: s.selected?.productId === id ? null : s.selected }))
+      await get().fetchAll()
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {

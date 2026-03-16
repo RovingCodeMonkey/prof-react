@@ -20,6 +20,7 @@ interface ICustomerStore extends IPaginationState, IPaginationActions {
   create: (data: Omit<Customer, 'customerId'>) => Promise<void>
   update: (data: Customer) => Promise<void>
   remove: (id: number) => Promise<void>
+  clearFilters: () => void
 }
 
 export const useCustomerStore = create<ICustomerStore>((set, get) => ({
@@ -57,6 +58,7 @@ export const useCustomerStore = create<ICustomerStore>((set, get) => ({
     set({ phone: value, page: 0 })
     get().fetchAll()
   },
+  clearFilters: () => { set({ search: '', phone: '', page: 0 }); get().fetchAll() },
 
   fetchOne: async (id) => {
     const cached = get().items.find((c) => c.customerId === id)
@@ -108,10 +110,8 @@ export const useCustomerStore = create<ICustomerStore>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.delete(`/customers/${id}`)
-      set((s) => ({
-        items: s.items.filter((c) => c.customerId !== id),
-        selected: s.selected?.customerId === id ? null : s.selected,
-      }))
+      set((s) => ({ selected: s.selected?.customerId === id ? null : s.selected }))
+      await get().fetchAll()
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {

@@ -25,6 +25,8 @@ export function DiscountEditPage() {
   const create = useDiscountStore((s) => s.create)
   const update = useDiscountStore((s) => s.update)
 
+  const [submitted, setSubmitted] = useState(false)
+
   const [form, setForm] = useState<Omit<Discount, 'discountId' | 'product'>>({
     productId: 0,
     beginDate: format(new Date(), 'yyyy-MM-dd'),
@@ -63,6 +65,7 @@ export function DiscountEditPage() {
   if (!form.discountPercentage) validationErrors.push('Discount % is required')
 
   const handleSave = async () => {
+    setSubmitted(true)
     if (validationErrors.length > 0) return
     if (mode === PageMode.Add) {
       await create(form)
@@ -79,7 +82,7 @@ export function DiscountEditPage() {
       </h1>
 
       {error && <p className="text-destructive mb-4">Error: {error}</p>}
-      {validationErrors.length > 0 && (
+      {submitted && validationErrors.length > 0 && (
         <ul className="mb-4 text-sm text-destructive list-disc list-inside">
           {validationErrors.map((e) => <li key={e}>{e}</li>)}
         </ul>
@@ -96,10 +99,10 @@ export function DiscountEditPage() {
             emptyMessage="No products found."
             fetchOptions={fetchProducts}
             getItemId={(p) => p.productId}
-            getItemLabel={(p) => p.name}
+            getItemLabel={(p) => `${p.name} - ${p.manufacturer}`}
             onSelect={(p) => {
               setForm((prev) => ({ ...prev, productId: p.productId }))
-              setSelectedProductName(p.name)
+              setSelectedProductName(`${p.name} - ${p.manufacturer}`)
             }}
           />
         </div>
@@ -145,7 +148,7 @@ export function DiscountEditPage() {
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} disabled={loading || validationErrors.length > 0}>
+        <Button onClick={handleSave} disabled={loading || (submitted && validationErrors.length > 0)}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/discounts')} disabled={loading}>

@@ -19,6 +19,8 @@ interface ISalesStore extends IPaginationState, IPaginationActions {
   productFilterName: string
   spFilterName: string
   customerFilterName: string
+  startDateFilter: string
+  endDateFilter: string
   fetchAll: () => Promise<void>
   fetchOne: (id: number) => Promise<Sale | null>
   create: (data: Omit<Sale, 'salesId' | 'product' | 'salesPerson' | 'customer'>) => Promise<void>
@@ -27,6 +29,9 @@ interface ISalesStore extends IPaginationState, IPaginationActions {
   setProductIdFilter: (id: number | null, name: string) => void
   setSpIdFilter: (id: number | null, name: string) => void
   setCustomerIdFilter: (id: number | null, name: string) => void
+  setStartDateFilter: (date: string) => void
+  setEndDateFilter: (date: string) => void
+  clearFilters: () => void
 }
 
 export const useSalesStore = create<ISalesStore>((set, get) => ({
@@ -40,15 +45,20 @@ export const useSalesStore = create<ISalesStore>((set, get) => ({
   productFilterName: '',
   spFilterName: '',
   customerFilterName: '',
+  startDateFilter: '',
+  endDateFilter: '',
   ...paginationInitialState,
   ...createPaginationActions(set, get),
 
   setProductIdFilter: (id, name) => { set({ productIdFilter: id, productFilterName: name, page: 0 }); get().fetchAll() },
   setSpIdFilter: (id, name) => { set({ salesPersonIdFilter: id, spFilterName: name, page: 0 }); get().fetchAll() },
   setCustomerIdFilter: (id, name) => { set({ customerIdFilter: id, customerFilterName: name, page: 0 }); get().fetchAll() },
+  setStartDateFilter: (date) => { set({ startDateFilter: date, page: 0 }); get().fetchAll() },
+  setEndDateFilter: (date) => { set({ endDateFilter: date, page: 0 }); get().fetchAll() },
+  clearFilters: () => { set({ productIdFilter: null, productFilterName: '', salesPersonIdFilter: null, spFilterName: '', customerIdFilter: null, customerFilterName: '', startDateFilter: '', endDateFilter: '', page: 0 }); get().fetchAll() },
 
   fetchAll: async () => {
-    const { page, pageSize, sortBy, ascending, productIdFilter, salesPersonIdFilter, customerIdFilter } = get()
+    const { page, pageSize, sortBy, ascending, productIdFilter, salesPersonIdFilter, customerIdFilter, startDateFilter, endDateFilter } = get()
     const params = new URLSearchParams({
       page: String(page),
       count: String(pageSize),
@@ -58,6 +68,8 @@ export const useSalesStore = create<ISalesStore>((set, get) => ({
     if (productIdFilter) params.set('productId', String(productIdFilter))
     if (salesPersonIdFilter) params.set('salesPersonId', String(salesPersonIdFilter))
     if (customerIdFilter) params.set('customerId', String(customerIdFilter))
+    if (startDateFilter) params.set('startDate', startDateFilter)
+    if (endDateFilter) params.set('endDate', endDateFilter)
 
     set({ loading: true, error: null })
     try {
@@ -120,10 +132,8 @@ export const useSalesStore = create<ISalesStore>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.delete(`/sales/${id}`)
-      set((s) => ({
-        items: s.items.filter((sale) => sale.salesId !== id),
-        selected: s.selected?.salesId === id ? null : s.selected,
-      }))
+      set((s) => ({ selected: s.selected?.salesId === id ? null : s.selected }))
+      await get().fetchAll()
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {

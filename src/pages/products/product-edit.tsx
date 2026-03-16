@@ -22,6 +22,8 @@ export function ProductEditPage() {
   const create = useProductStore((s) => s.create)
   const update = useProductStore((s) => s.update)
 
+  const [submitted, setSubmitted] = useState(false)
+
   const [form, setForm] = useState<Omit<Product, 'productId'>>({
     name: '',
     manufacturer: '',
@@ -65,13 +67,18 @@ export function ProductEditPage() {
   if (!form.salePrice) validationErrors.push('Sale Price is required')
 
   const handleSave = async () => {
+    setSubmitted(true)
     if (validationErrors.length > 0) return
-    if (mode === PageMode.Add) {
-      await create(form)
-    } else {
-      await update({ productId: productId!, ...form })
+    try {
+      if (mode === PageMode.Add) {
+        await create(form)
+      } else {
+        await update({ productId: productId!, ...form })
+      }
+      navigate('/products')
+    } catch {
+      // error is set in the store and displayed above
     }
-    navigate('/products')
   }
 
   return (
@@ -81,7 +88,7 @@ export function ProductEditPage() {
       </h1>
 
       {error && <p className="text-destructive mb-4">Error: {error}</p>}
-      {validationErrors.length > 0 && (
+      {submitted && validationErrors.length > 0 && (
         <ul className="mb-4 text-sm text-destructive list-disc list-inside">
           {validationErrors.map((e) => <li key={e}>{e}</li>)}
         </ul>
@@ -160,7 +167,7 @@ export function ProductEditPage() {
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} disabled={loading || validationErrors.length > 0}>
+        <Button onClick={handleSave} disabled={loading || (submitted && validationErrors.length > 0)}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/products')} disabled={loading}>

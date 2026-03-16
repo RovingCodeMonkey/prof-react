@@ -20,6 +20,7 @@ interface ISalesPersonStore extends IPaginationState, IPaginationActions {
   create: (data: Omit<SalesPerson, 'salesPersonId'>) => Promise<void>
   update: (data: SalesPerson) => Promise<void>
   remove: (id: number) => Promise<void>
+  clearFilters: () => void
 }
 
 export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
@@ -57,6 +58,7 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
     set({ phone: value, page: 0 })
     get().fetchAll()
   },
+  clearFilters: () => { set({ search: '', phone: '', page: 0 }); get().fetchAll() },
 
   fetchOne: async (id) => {
     const cached = get().items.find((sp) => sp.salesPersonId === id)
@@ -84,6 +86,7 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
       set((s) => ({ items: [...s.items, created] }))
     } catch (e) {
       set({ error: (e as Error).message })
+      throw e
     } finally {
       set({ loading: false })
     }
@@ -99,6 +102,7 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
       }))
     } catch (e) {
       set({ error: (e as Error).message })
+      throw e
     } finally {
       set({ loading: false })
     }
@@ -108,10 +112,8 @@ export const useSalesPersonStore = create<ISalesPersonStore>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.delete(`/salespersons/${id}`)
-      set((s) => ({
-        items: s.items.filter((sp) => sp.salesPersonId !== id),
-        selected: s.selected?.salesPersonId === id ? null : s.selected,
-      }))
+      set((s) => ({ selected: s.selected?.salesPersonId === id ? null : s.selected }))
+      await get().fetchAll()
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {

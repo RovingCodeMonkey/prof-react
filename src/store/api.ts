@@ -10,7 +10,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}`)
+    const body = await res.text().catch(() => '')
+    throw new Error(body || `${res.status} ${res.statusText}`)
   }
 
   // 204 No Content (DELETE / PUT) — return empty

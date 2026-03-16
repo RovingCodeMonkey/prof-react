@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { SortHeader } from '@/components/sort-header'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useDebounce } from '@/lib/hooks'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import type { SalesPerson } from '@/store/types'
 
 const SORT_KEY_MAP: Record<string, string> = {
@@ -44,6 +45,8 @@ export function SalespersonPage() {
   const setSort = useSalesPersonStore((s) => s.setSort)
   const nextPage = useSalesPersonStore((s) => s.nextPage)
   const prevPage = useSalesPersonStore((s) => s.prevPage)
+  const remove = useSalesPersonStore((s) => s.remove)
+  const clearFilters = useSalesPersonStore((s) => s.clearFilters)
 
   const [searchInput, setSearchInput] = useState('')
   const [phoneInput, setPhoneInput] = useState('')
@@ -60,9 +63,12 @@ export function SalespersonPage() {
     {
       id: 'actions',
       cell: ({ row }) => (
-        <Link to={`/salesperson/${row.original.salesPersonId}`}>
-          <Button variant="ghost" size="icon-sm"><Pencil /></Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link to={`/salesperson/${row.original.salesPersonId}`}>
+            <Button variant="ghost" size="icon-sm"><Pencil /></Button>
+          </Link>
+          <ConfirmDeleteDialog onConfirm={() => remove(row.original.salesPersonId)} />
+        </div>
       ),
     },
     {
@@ -101,13 +107,13 @@ export function SalespersonPage() {
       accessorKey: 'manager',
       header: () => <SortHeader label="Manager" sortKey={SORT_KEY_MAP.manager} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
     },
-  ], [sortBy, ascending, setSort])
+  ], [sortBy, ascending, setSort, remove])
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Salesperson</h1>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex items-center justify-between gap-4 px-5">
         <div className="flex gap-2">
           <Input
             placeholder="Search by name..."
@@ -122,16 +128,21 @@ export function SalespersonPage() {
             className="max-w-sm"
           />
         </div>
-        <Link to="/salesperson/new">
-          <Button><Plus />New Salesperson</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setSearchInput(''); setPhoneInput(''); clearFilters() }}>Clear Filters</Button>
+          <Link to="/salesperson/new">
+            <Button><Plus />New Salesperson</Button>
+          </Link>
+        </div>
       </div>
 
       {loading && <p className="text-muted-foreground">Loading...</p>}
       {error && <p className="text-destructive">Error: {error}</p>}
       {!loading && !error && <DataTable columns={columns} data={items} />}
 
-      <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      <div className="px-5">
+        <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      </div>
     </div>
   )
 }

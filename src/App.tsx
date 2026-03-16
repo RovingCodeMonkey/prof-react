@@ -11,6 +11,7 @@ import { SalesPage } from './pages/sales'
 import { SaleEditPage } from './pages/sales/sale-edit'
 import { SalespersonPage } from './pages/salesperson'
 import { SalespersonEditPage } from './pages/salesperson/salesperson-edit'
+import { ReportsPage } from './pages/reports'
 import { ErrorPage } from './pages/error'
 
 const router = createBrowserRouter([
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: '/salesperson', element: <SalespersonPage /> },
       { path: '/salesperson/new', element: <SalespersonEditPage /> },
       { path: '/salesperson/:salesPersonId', element: <SalespersonEditPage /> },
+      { path: '/reports', element: <ReportsPage /> },
       { path: '*', element: <ErrorPage /> },
     ],
   },

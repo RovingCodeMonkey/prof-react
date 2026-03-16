@@ -23,6 +23,8 @@ export function SalespersonEditPage() {
   const create = useSalesPersonStore((s) => s.create)
   const update = useSalesPersonStore((s) => s.update)
 
+  const [submitted, setSubmitted] = useState(false)
+
   const [form, setForm] = useState<Omit<SalesPerson, 'salesPersonId'>>({
     firstName: '',
     lastName: '',
@@ -62,13 +64,19 @@ export function SalespersonEditPage() {
   if (!form.startDate) validationErrors.push('Start Date is required')
 
   const handleSave = async () => {
+    setSubmitted(true)
     if (validationErrors.length > 0) return
-    if (mode === PageMode.Add) {
-      await create(form)
-    } else {
-      await update({ salesPersonId: salesPersonId!, ...form })
+    const payload = { ...form, terminationDate: form.terminationDate || null }
+    try {
+      if (mode === PageMode.Add) {
+        await create(payload)
+      } else {
+        await update({ salesPersonId: salesPersonId!, ...payload })
+      }
+      navigate('/salesperson')
+    } catch {
+      // error is set in the store and displayed above
     }
-    navigate('/salesperson')
   }
 
   return (
@@ -78,7 +86,7 @@ export function SalespersonEditPage() {
       </h1>
 
       {error && <p className="text-destructive mb-4">Error: {error}</p>}
-      {validationErrors.length > 0 && (
+      {submitted && validationErrors.length > 0 && (
         <ul className="mb-4 text-sm text-destructive list-disc list-inside">
           {validationErrors.map((e) => <li key={e}>{e}</li>)}
         </ul>
@@ -112,7 +120,7 @@ export function SalespersonEditPage() {
 
         <div className="grid gap-1.5">
           <label className="text-sm font-medium text-foreground" htmlFor="terminationDate">Termination Date</label>
-          <Input id="terminationDate" type="date" value={form.terminationDate} onChange={(e) => handleChange('terminationDate', e.target.value)} />
+          <Input id="terminationDate" type="date" value={form.terminationDate ?? undefined} onChange={(e) => handleChange('terminationDate', e.target.value)} />
         </div>
 
         <div className="grid gap-1.5">
@@ -122,7 +130,7 @@ export function SalespersonEditPage() {
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} disabled={loading || validationErrors.length > 0}>
+        <Button onClick={handleSave} disabled={loading || (submitted && validationErrors.length > 0)}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/salesperson')} disabled={loading}>

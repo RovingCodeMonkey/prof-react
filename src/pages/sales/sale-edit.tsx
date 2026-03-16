@@ -7,7 +7,7 @@ import { api } from '@/store/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EntityCombobox } from '@/components/entity-combobox'
-import { fetchProducts, fetchSalesPersons, fetchCustomers } from '@/lib/fetch-helpers'
+import { fetchAvailableProducts, fetchSalesPersons, fetchCustomers } from '@/lib/fetch-helpers'
 import type { Sale, Product, SalesPerson, Customer, Discount } from '@/store/types'
 import { PageMode } from '../constants'
 
@@ -26,6 +26,8 @@ export function SaleEditPage() {
   const create = useSalesStore((s) => s.create)
   const update = useSalesStore((s) => s.update)
 
+  const [submitted, setSubmitted] = useState(false)
+
   const [form, setForm] = useState<Omit<Sale, 'salesId' | 'product' | 'salesPerson' | 'customer'>>({
     productId: 0,
     salesPersonId: 0,
@@ -34,8 +36,11 @@ export function SaleEditPage() {
     salePrice: 0,
     appliedDiscount: 0,
     finalPrice: 0,
+    commisionPercentage: 0,
+    commision: 0,
   })
   const [availableDiscounts, setAvailableDiscounts] = useState<Discount[]>([])
+  const [selectedDiscountValue, setSelectedDiscountValue] = useState('')
   const [selectedProductName, setSelectedProductName] = useState('')
   const [selectedSpName, setSelectedSpName] = useState('')
   const [selectedCustomerName, setSelectedCustomerName] = useState('')
@@ -52,6 +57,8 @@ export function SaleEditPage() {
             salePrice: sale.salePrice,
             appliedDiscount: sale.appliedDiscount,
             finalPrice: sale.finalPrice,
+            commisionPercentage: sale.commisionPercentage || sale.product?.commisionPercentage || 0,
+            commision: sale.commision || 0,
           })
           setSelectedProductName(sale.product?.name ?? '')
           setSelectedSpName(
@@ -78,7 +85,8 @@ export function SaleEditPage() {
     return () => controller.abort()
   }, [form.productId, form.salesDate])
 
-  const finalPrice = form.salePrice - (form.appliedDiscount / 100) * form.salePrice
+  const finalPrice = form.salePrice - (form.appliedDiscount / 100) * form.salePrice;
+  const commissionValue = (form.commisionPercentage / 100) * finalPrice;
 
   const validationErrors: string[] = []
   if (!form.productId) validationErrors.push('Product is required')
@@ -88,8 +96,9 @@ export function SaleEditPage() {
   if (!form.salePrice) validationErrors.push('Sale Price is required')
 
   const handleSave = async () => {
+    setSubmitted(true)
     if (validationErrors.length > 0) return
-    const payload = { ...form, finalPrice }
+    const payload = { ...form, finalPrice, commision: commissionValue }
     if (mode === PageMode.Add) {
       await create(payload)
     } else {
@@ -105,7 +114,7 @@ export function SaleEditPage() {
       </h1>
 
       {error && <p className="text-destructive mb-4">Error: {error}</p>}
-      {validationErrors.length > 0 && (
+      {submitted && validationErrors.length > 0 && (
         <ul className="mb-4 text-sm text-destructive list-disc list-inside">
           {validationErrors.map((e) => <li key={e}>{e}</li>)}
         </ul>
@@ -120,12 +129,12 @@ export function SaleEditPage() {
             placeholder="Select product..."
             searchPlaceholder="Search products..."
             emptyMessage="No products found."
-            fetchOptions={fetchProducts}
+            fetchOptions={fetchAvailableProducts}
             getItemId={(p) => p.productId}
-            getItemLabel={(p) => p.name}
+            getItemLabel={(p) => `${p.name} - ${p.manufacturer}`}
             onSelect={(p) => {
-              setForm((prev) => ({ ...prev, productId: p.productId, salePrice: p.salePrice }))
-              setSelectedProductName(p.name)
+              setForm((prev) => ({ ...prev, productId: p.productId, salePrice: p.salePrice, commisionPercentage: p.commisionPercentage }))
+              setSelectedProductName(`${p.name} - ${p.manufacturer}`)
             }}
           />
         </div>
@@ -205,21 +214,27 @@ export function SaleEditPage() {
             type="number"
             step="0.01"
             value={form.appliedDiscount}
-            onChange={(e) => setForm((prev) => ({ ...prev, appliedDiscount: parseFloat(e.target.value) || 0 }))}
+            onChange={(e) => {
+              setForm((prev) => ({ ...prev, appliedDiscount: parseFloat(e.target.value) || 0 }))
+              setSelectedDiscountValue('')
+            }}
           />
           {availableDiscounts.length > 0 && (
             <select
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-              defaultValue=""
+              value={selectedDiscountValue}
               onChange={(e) => {
                 const pct = parseFloat(e.target.value)
-                if (!isNaN(pct)) setForm((prev) => ({ ...prev, appliedDiscount: pct }))
+                if (!isNaN(pct)) {
+                  setForm((prev) => ({ ...prev, appliedDiscount: pct }))
+                  setSelectedDiscountValue(e.target.value)
+                }
               }}
             >
               <option value="" disabled>Apply available discount...</option>
               {availableDiscounts.map((d) => (
                 <option key={d.discountId} value={d.discountPercentage}>
-                  {d.discountPercentage}% (ends {d.endDate ?? 'no expiry'})
+                  {d.discountPercentage}% (ends {d.endDate ? format(parseISO(d.endDate), 'PP') : 'no expiry'})
                 </option>
               ))}
             </select>
@@ -235,10 +250,20 @@ export function SaleEditPage() {
             className="bg-muted cursor-not-allowed"
           />
         </div>
+
+        <div className="grid gap-1.5">
+          <label className="text-sm font-medium text-foreground">Commission</label>
+          <Input
+            type="number"
+            readOnly
+            value={commissionValue.toFixed(2)}
+            className="bg-muted cursor-not-allowed"
+          />
+        </div>
       </div>
 
       <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} disabled={loading || validationErrors.length > 0}>
+        <Button onClick={handleSave} disabled={loading || (submitted && validationErrors.length > 0)}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" onClick={() => navigate('/sales')} disabled={loading}>

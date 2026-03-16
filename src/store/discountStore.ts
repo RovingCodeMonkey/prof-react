@@ -18,6 +18,7 @@ interface IDiscountStore extends IPaginationState, IPaginationActions {
   create: (data: Omit<Discount, 'discountId' | 'product'>) => Promise<void>
   update: (data: Discount) => Promise<void>
   remove: (id: number) => Promise<void>
+  clearFilters: () => void
 }
 
 export const useDiscountStore = create<IDiscountStore>((set, get) => ({
@@ -27,6 +28,8 @@ export const useDiscountStore = create<IDiscountStore>((set, get) => ({
   error: null,
   ...paginationInitialState,
   ...createPaginationActions(set, get),
+
+  clearFilters: () => { set({ search: '', page: 0 }); get().fetchAll() },
 
   fetchAll: async () => {
     const { page, pageSize, search, sortBy, ascending } = get()
@@ -99,10 +102,8 @@ export const useDiscountStore = create<IDiscountStore>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.delete(`/discounts/${id}`)
-      set((s) => ({
-        items: s.items.filter((d) => d.discountId !== id),
-        selected: s.selected?.discountId === id ? null : s.selected,
-      }))
+      set((s) => ({ selected: s.selected?.discountId === id ? null : s.selected }))
+      await get().fetchAll()
     } catch (e) {
       set({ error: (e as Error).message })
     } finally {

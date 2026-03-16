@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { SortHeader } from '@/components/sort-header'
 import { PaginationControls } from '@/components/pagination-controls'
 import { EntityCombobox } from '@/components/entity-combobox'
+import { Input } from '@/components/ui/input'
 import { fetchProducts, fetchSalesPersons, fetchCustomers } from '@/lib/fetch-helpers'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import type { Sale, Product, SalesPerson, Customer } from '@/store/types'
 
 const SORT_KEY_MAP: Record<string, string> = {
@@ -18,6 +20,8 @@ const SORT_KEY_MAP: Record<string, string> = {
   salesPersonId: 'salespersonid',
   customerId: 'customerid',
   salesDate: 'salesdate',
+  finalPrice: 'finalprice',
+  commision: 'commision',
 }
 
 export function SalesPage() {
@@ -25,6 +29,7 @@ export function SalesPage() {
     items, loading, error, page, pageSize, totalCount, cursor, sortBy, ascending,
     productIdFilter, salesPersonIdFilter, customerIdFilter,
     productFilterName, spFilterName, customerFilterName,
+    startDateFilter, endDateFilter,
   } = useSalesStore(
     useShallow((s) => ({
       items: s.items,
@@ -42,6 +47,8 @@ export function SalesPage() {
       productFilterName: s.productFilterName,
       spFilterName: s.spFilterName,
       customerFilterName: s.customerFilterName,
+      startDateFilter: s.startDateFilter,
+      endDateFilter: s.endDateFilter,
     }))
   )
   const fetchAll = useSalesStore((s) => s.fetchAll)
@@ -51,6 +58,10 @@ export function SalesPage() {
   const setProductIdFilter = useSalesStore((s) => s.setProductIdFilter)
   const setSpIdFilter = useSalesStore((s) => s.setSpIdFilter)
   const setCustomerIdFilter = useSalesStore((s) => s.setCustomerIdFilter)
+  const setStartDateFilter = useSalesStore((s) => s.setStartDateFilter)
+  const setEndDateFilter = useSalesStore((s) => s.setEndDateFilter)
+  const remove = useSalesStore((s) => s.remove)
+  const clearFilters = useSalesStore((s) => s.clearFilters)
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -60,23 +71,18 @@ export function SalesPage() {
     {
       id: 'actions',
       cell: ({ row }) => (
-        <Link to={`/sales/${row.original.salesId}`}>
-          <Button variant="ghost" size="icon-sm"><Pencil /></Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link to={`/sales/${row.original.salesId}`}>
+            <Button variant="ghost" size="icon-sm"><Pencil /></Button>
+          </Link>
+          <ConfirmDeleteDialog onConfirm={() => remove(row.original.salesId)} />
+        </div>
       ),
     },
     {
       id: 'product',
       header: () => <SortHeader label="Product" sortKey={SORT_KEY_MAP.productId} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
       cell: ({ row }) => row.original.product?.name ?? '—',
-    },
-    {
-      id: 'salesPerson',
-      header: () => <SortHeader label="Sales Person" sortKey={SORT_KEY_MAP.salesPersonId} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
-      cell: ({ row }) =>
-        row.original.salesPerson
-          ? `${row.original.salesPerson.firstName} ${row.original.salesPerson.lastName}`
-          : '—',
     },
     {
       id: 'customer',
@@ -87,17 +93,35 @@ export function SalesPage() {
           : '—',
     },
     {
+      accessorKey: 'finalPrice',
+      header: () => <SortHeader label="Price" sortKey={SORT_KEY_MAP.finalPrice} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
+      cell: ({ getValue }) => `$${getValue<number>().toFixed(2)}`,
+    },
+    {
+      id: 'salesPerson',
+      header: () => <SortHeader label="Sales Person" sortKey={SORT_KEY_MAP.salesPersonId} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
+      cell: ({ row }) =>
+        row.original.salesPerson
+          ? `${row.original.salesPerson.firstName} ${row.original.salesPerson.lastName}`
+          : '—',
+    },
+    {
+      accessorKey: 'commision',
+      header: () => <SortHeader label="Commission" sortKey={SORT_KEY_MAP.commision} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
+      cell: ({ getValue }) => `$${getValue<number>().toFixed(2)}`,
+    },
+    {
       accessorKey: 'salesDate',
       header: () => <SortHeader label="Sales Date" sortKey={SORT_KEY_MAP.salesDate} activeSortBy={sortBy} ascending={ascending} onSort={setSort} />,
       cell: ({ getValue }) => format(parseISO(getValue<string>()), 'PP'),
     },
-  ], [sortBy, ascending, setSort])
+  ], [sortBy, ascending, setSort, remove])
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Sales</h1>
 
-      <div className="mb-2 flex items-center gap-4">
+      <div className="mb-2 flex items-center gap-4 px-5">
         <div className="flex-1">
           <EntityCombobox<Product>
             value={productIdFilter}
@@ -108,8 +132,8 @@ export function SalesPage() {
             clearLabel="All products"
             fetchOptions={fetchProducts}
             getItemId={(p) => p.productId}
-            getItemLabel={(p) => p.name}
-            onSelect={(p) => setProductIdFilter(p.productId, p.name)}
+            getItemLabel={(p) => `${p.name} - ${p.manufacturer}`}
+            onSelect={(p) => setProductIdFilter(p.productId, `${p.name} - ${p.manufacturer}`)}
             onClear={() => setProductIdFilter(null, '')}
           />
         </div>
@@ -145,7 +169,27 @@ export function SalesPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 flex items-center gap-4 px-5">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-foreground whitespace-nowrap">From</label>
+          <Input
+            type="date"
+            value={startDateFilter}
+            onChange={(e) => setStartDateFilter(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-foreground whitespace-nowrap">To</label>
+          <Input
+            type="date"
+            value={endDateFilter}
+            onChange={(e) => setEndDateFilter(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="flex-1" />
+        <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
         <Link to="/sales/new">
           <Button><Plus />New Sale</Button>
         </Link>
@@ -155,7 +199,9 @@ export function SalesPage() {
       {error && <p className="text-destructive">Error: {error}</p>}
       {!loading && !error && <DataTable columns={columns} data={items} />}
 
-      <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      <div className="px-5">
+        <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      </div>
     </div>
   )
 }

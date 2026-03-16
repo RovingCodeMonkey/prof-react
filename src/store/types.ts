@@ -25,7 +25,7 @@ export interface SalesPerson {
   address: string
   phone: string
   startDate: string
-  terminationDate: string
+  terminationDate: string | null
   manager: string
 }
 
@@ -38,9 +38,18 @@ export interface Sale {
   salePrice: number
   appliedDiscount: number
   finalPrice: number
+  commisionPercentage: number
+  commision: number
   product?: Product
   salesPerson?: SalesPerson
   customer?: Customer
+}
+
+export interface ReportResult {
+  items: Sale[]
+  count: number
+  totalSales: number
+  totalCommission: number
 }
 
 export interface PagedResult<T> {

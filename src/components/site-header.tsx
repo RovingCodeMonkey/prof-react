@@ -9,6 +9,7 @@ const navLinks = [
   { to: "/products", label: "Products" },
   { to: "/sales", label: "Sales" },
   { to: "/salesperson", label: "Salesperson" },
+  { to: "/reports", label: "Reports" },
 ]
 
 export function SiteHeader() {
@@ -31,9 +32,10 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             <a
-              href="https://github.com/RovingCodeMonkey"
+              href="https://github.com/RovingCodeMonkey/prof-react"
               target="_blank"
               rel="noreferrer"
+              title="Front End"
             >
               <div
                 className={buttonVariants({
@@ -45,10 +47,11 @@ export function SiteHeader() {
                 <span className="sr-only">GitHub</span>
               </div>
             </a>
-            <a
-              href="https://twitter.com/RovingCodeMnkey"
+               <a
+              href="https://github.com/RovingCodeMonkey/prof-c-sharp-mvc"
               target="_blank"
               rel="noreferrer"
+              title="Back End"
             >
               <div
                 className={buttonVariants({
@@ -56,8 +59,8 @@ export function SiteHeader() {
                   variant: "ghost",
                 })}
               >
-                <Icons.twitter className="h-5 w-5 fill-current" />
-                <span className="sr-only">Twitter</span>
+                <Icons.gitHub className="h-5 w-5" />
+                <span className="sr-only">GitHub</span>
               </div>
             </a>
             <ThemeToggle />

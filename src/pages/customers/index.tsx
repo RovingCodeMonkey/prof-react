@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { SortHeader } from '@/components/sort-header'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useDebounce } from '@/lib/hooks'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import type { Customer } from '@/store/types'
 
 const SORT_KEY_MAP: Record<string, string> = {
@@ -42,6 +43,8 @@ export function CustomersPage() {
   const setSort = useCustomerStore((s) => s.setSort)
   const nextPage = useCustomerStore((s) => s.nextPage)
   const prevPage = useCustomerStore((s) => s.prevPage)
+  const remove = useCustomerStore((s) => s.remove)
+  const clearFilters = useCustomerStore((s) => s.clearFilters)
 
   const [searchInput, setSearchInput] = useState('')
   const [phoneInput, setPhoneInput] = useState('')
@@ -58,9 +61,12 @@ export function CustomersPage() {
     {
       id: 'actions',
       cell: ({ row }) => (
-        <Link to={`/customers/${row.original.customerId}`}>
-          <Button variant="ghost" size="icon-sm"><Pencil /></Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link to={`/customers/${row.original.customerId}`}>
+            <Button variant="ghost" size="icon-sm"><Pencil /></Button>
+          </Link>
+          <ConfirmDeleteDialog onConfirm={() => remove(row.original.customerId)} />
+        </div>
       ),
     },
     {
@@ -87,13 +93,13 @@ export function CustomersPage() {
         return val ? format(parseISO(val), 'PP') : ''
       },
     },
-  ], [sortBy, ascending, setSort])
+  ], [sortBy, ascending, setSort, remove])
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold tracking-tight text-foreground mb-6">Customers</h1>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex items-center justify-between gap-4 px-5">
         <div className="flex gap-2">
           <Input
             placeholder="Search by name..."
@@ -108,16 +114,21 @@ export function CustomersPage() {
             className="max-w-sm"
           />
         </div>
-        <Link to="/customers/new">
-          <Button><Plus />New Customer</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setSearchInput(''); setPhoneInput(''); clearFilters() }}>Clear Filters</Button>
+          <Link to="/customers/new">
+            <Button><Plus />New Customer</Button>
+          </Link>
+        </div>
       </div>
 
       {loading && <p className="text-muted-foreground">Loading...</p>}
       {error && <p className="text-destructive">Error: {error}</p>}
       {!loading && !error && <DataTable columns={columns} data={items} />}
 
-      <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      <div className="px-5">
+        <PaginationControls page={page} totalPages={totalPages} cursor={cursor} onPrev={prevPage} onNext={nextPage} />
+      </div>
     </div>
   )
 }
